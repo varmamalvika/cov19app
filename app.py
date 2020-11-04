@@ -15,6 +15,7 @@ from datetime import datetime
 external_stylesheets = [dbc.themes.CYBORG]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+server = app.server
 
 colors = {
     'background': '#111111',
@@ -80,22 +81,22 @@ content = html.Div(id="page-content", style=styling)
 
 app_page = html.Div([dcc.Location(id="url"), home_page, content], style=styling)
 
-# app.layout = dbc.Container(
-#     children=[app_page]
-# )
+app.layout = dbc.Container(
+    children=[app_page]
+)
 
-app.layout = html.Div([
-    dbc.Card(
-        dbc.CardBody([
-            html.Br(),
-            dbc.Row([
-                dbc.Col([
-                    app_page
-                ], width=12)
-            ], align='center')
-        ])
-    )
-])
+# app.layout = html.Div([
+#     dbc.Card(
+#         dbc.CardBody([
+#             html.Br(),
+#             dbc.Row([
+#                 dbc.Col([
+#                     app_page
+#                 ], width=12)
+#             ], align='center')
+#         ])
+#     )
+# ])
 
 
 # Referenced from https://dash-bootstrap-components.opensource.faculty.ai/examples/simple-sidebar/page-1
