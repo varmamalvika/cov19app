@@ -55,12 +55,12 @@ fig1 = Figure(data=Choropleth(
 
 config = dict({'scrollZoom': False, 'displayModeBar': False})
 fig1.update_layout(
-    title_text='USA COVID Tracking Map (Hover for breakdown)<br>Last Updated: '+ str(last_updated_date), # Create a Title
+    title_text='USA COVID Tracking Map (Hover for breakdown)<br>Last Updated: ' + str(last_updated_date), # Create a Title
     font=dict(size=10),
     geo_scope='usa',
     template="plotly_dark",
-    autosize=True,
-    margin=dict(l=5, r=5, t=30, b=10)
+    margin=dict(l=5, r=5, t=30, b=10),
+    dragmode=False
 )
 
 nav = dbc.Nav(
