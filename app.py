@@ -31,7 +31,7 @@ df = pd.DataFrame(raw_df_data)
 df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
 df = df.sort_values('date').groupby('state', as_index=False).last()
 
-df_overall_states = df[['state', 'date', 'positive','death','recovered']].copy()
+df_overall_states = df[['state', 'date', 'positive', 'death', 'recovered']].copy()
 df_overall_states.loc[:, 'positive'] = df_overall_states['positive'].astype('Int32')
 df_overall_states.loc[:, 'death'] = df_overall_states['death'].astype('Int32')
 df_overall_states.loc[:, 'recovered'] = df_overall_states['recovered'].fillna(value=0).astype('Int32')
@@ -56,8 +56,11 @@ fig1 = Figure(data=Choropleth(
 config = dict({'scrollZoom': False, 'displayModeBar': False})
 fig1.update_layout(
     title_text='USA COVID Tracking Map (Hover for breakdown)<br>Last Updated: '+ str(last_updated_date), # Create a Title
+    font=dict(size=10),
     geo_scope='usa',
-    template="plotly_dark"
+    template="plotly_dark",
+    autosize=True,
+    margin=dict(l=5, r=5, t=30, b=10)
 )
 
 nav = dbc.Nav(
@@ -73,7 +76,9 @@ nav = dbc.Nav(
 
 home_page = html.Div(
     [
+        html.Br(),
         html.H1("USA COVID-19 Pandemic Tracker App", style=styling),
+        html.Br(),
         html.Div(nav, style=styling),
     ], style=styling)
 
@@ -115,8 +120,8 @@ def toggle_active_links(pathname):
 
 pg1_content = html.Div(
     [
-        html.Hr(),
-        dcc.Graph(style={'width': '1200px', 'height': '700px'},
+        html.Br(),
+        dcc.Graph(style={'width': '100%', 'height': '70vh', 'display': 'flex', 'flex-flow': 'column'},
             id='cov-1-graph',
             figure=fig1,
             config={
