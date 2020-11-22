@@ -27,6 +27,16 @@ styling = {
     'color': colors['text']
 }
 
+age_sex_state_df = pd.read_csv('Covid_Age_Sex_State_Data.csv')
+age_sex_state_df['COVID-19 Deaths'] = age_sex_state_df['COVID-19 Deaths'].fillna(0)
+print(age_sex_state_df["State"].unique())
+
+underlying_conditions_df = pd.read_csv('Covid_Underlying_Conditions_Data.csv')
+underlying_conditions_df['Number of COVID-19 Deaths'] = underlying_conditions_df['Number of COVID-19 Deaths'].fillna(0)
+
+print(underlying_conditions_df["State"].unique())
+print(underlying_conditions_df["Condition Group"].unique())
+
 raw_us_df_data = requests.get("https://api.covidtracking.com/v1/us/daily.json").json()
 us_historical_df = pd.DataFrame(raw_us_df_data)
 us_historical_df['date'] = pd.to_datetime(us_historical_df['date'], format='%Y%m%d')
@@ -329,7 +339,7 @@ switches = dbc.FormGroup(
             switch=True,
             style={
                 'textAlign': 'left',
-                'color': '#00CED1', #DarkTurquoise
+                'color': '#00CED1',  # DarkTurquoise
                 'display': 'block',
                 'width': 'auto',
                 'font-size': '20px',
@@ -435,6 +445,294 @@ def on_form_change(switches_value):
     return template
 
 
+style_calc_row_label = {
+    'textAlign': 'left',
+    'color': 'Gold',
+    'display': 'inline',
+    'width': 'auto',
+    'font-size': '20px',
+    'line-height': '1.2',
+    # 'padding': '2px 100px',
+    'padding-left': '15%',
+    'zoom': '1.1',
+    'float': 'left'
+}
+
+style_calc_items = {
+    'textAlign': 'left',
+    'color': '#FF6347',  # Tomato
+    'display': 'block',
+    'width': 'auto',
+    'font-size': '19.5px',
+    'line-height': '1.1',
+    'zoom': '1.1'
+}
+
+age_map_multiple_dfs = {
+    '0-24 years': '0-24', '25-34 years': '25-34', '35-44 years': '35-44', '45-54 years': '45-54',
+    '55-64 years': '55-64', '65-74 years': '65-74', '75-84 years': '75-84',
+    '85 years and over': '85+'
+}
+
+unique_age_groups = ['0-24', '25-34', '35-44', '45-54', '55-64', '65-74', '75-84',
+                     '85+']
+
+age_group_options = []
+for age_group in unique_age_groups:
+    if age_group == '85+':
+        age_group_options.append({"label": age_group, "value": "85 years and over"})
+    else:
+        age_group_options.append({"label": age_group, "value": age_group + " years"})
+
+
+age_group_radioitems = dbc.FormGroup(
+    [
+        dbc.Row(
+            [
+                dbc.Col(dbc.Label("Age Group", style=style_calc_row_label, ), width=2),
+                dbc.Col(dbc.RadioItems(
+                    options=age_group_options,
+                    value='0-24 years',
+                    inline=True,
+                    id="age-group-radioitems-input",
+                    style=style_calc_items,
+                ), width=10),
+            ]
+        )
+    ]
+)
+
+
+unique_states = ['Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California',
+                 'Colorado', 'Connecticut', 'Delaware', 'District of Columbia', 'Florida',
+                 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana', 'Iowa', 'Kansas',
+                 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts', 'Michigan',
+                 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska', 'Nevada',
+                 'New Hampshire', 'New Jersey', 'New Mexico', 'New York',
+                 'North Carolina', 'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania',
+                 'Rhode Island', 'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah',
+                 'Vermont', 'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming',
+                 'Puerto Rico']
+
+us_state_abbrev = {
+    'Alabama': 'AL',
+    'Alaska': 'AK',
+    'Arizona': 'AZ',
+    'Arkansas': 'AR',
+    'California': 'CA',
+    'Colorado': 'CO',
+    'Connecticut': 'CT',
+    'Delaware': 'DE',
+    'District of Columbia': 'DC',
+    'Florida': 'FL',
+    'Georgia': 'GA',
+    'Hawaii': 'HI',
+    'Idaho': 'ID',
+    'Illinois': 'IL',
+    'Indiana': 'IN',
+    'Iowa': 'IA',
+    'Kansas': 'KS',
+    'Kentucky': 'KY',
+    'Louisiana': 'LA',
+    'Maine': 'ME',
+    'Maryland': 'MD',
+    'Massachusetts': 'MA',
+    'Michigan': 'MI',
+    'Minnesota': 'MN',
+    'Mississippi': 'MS',
+    'Missouri': 'MO',
+    'Montana': 'MT',
+    'Nebraska': 'NE',
+    'Nevada': 'NV',
+    'New Hampshire': 'NH',
+    'New Jersey': 'NJ',
+    'New Mexico': 'NM',
+    'New York': 'NY',
+    'North Carolina': 'NC',
+    'North Dakota': 'ND',
+    'Ohio': 'OH',
+    'Oklahoma': 'OK',
+    'Oregon': 'OR',
+    'Pennsylvania': 'PA',
+    'Puerto Rico': 'PR',
+    'Rhode Island': 'RI',
+    'South Carolina': 'SC',
+    'South Dakota': 'SD',
+    'Tennessee': 'TN',
+    'Texas': 'TX',
+    'Utah': 'UT',
+    'Vermont': 'VT',
+    'Virginia': 'VA',
+    'Washington': 'WA',
+    'West Virginia': 'WV',
+    'Wisconsin': 'WI',
+    'Wyoming': 'WY'
+}
+
+state_options = []
+for state in unique_states:
+    state_options.append({"label": state, "value": state})
+
+state_dropdown = dbc.FormGroup(
+    [
+        dbc.Row(
+            [
+                dbc.Col(dbc.Label("State", style=style_calc_row_label, ), width=2),
+                dbc.Col(dbc.Select(
+                    options=state_options,
+                    value=unique_states[0],
+                    id="state-dropdown-input",
+                    style=style_calc_items,
+                ), width=10),
+            ]
+        )
+    ]
+)
+
+gender_radioitems = dbc.FormGroup(
+    [
+        dbc.Row(
+            [
+                dbc.Col(dbc.Label("Gender", style=style_calc_row_label, ), width=2),
+                dbc.Col(dbc.RadioItems(
+                    options=[
+                        {"label": "Male", "value": "Male"},
+                        {"label": "Female", "value": "Female"},
+                        {"label": "Other", "value": "Unknown"},
+                    ],
+                    value="Male",
+                    inline=True,
+                    id="gender-radioitems-input",
+                    style=style_calc_items,
+                ), width=10),
+            ]
+        )
+    ]
+)
+
+unique_diseases = ['Respiratory diseases', 'Circulatory diseases', 'Sepsis',
+                   'Malignant neoplasms', 'Diabetes', 'Obesity', 'Alzheimer disease',
+                   'Vascular and unspecified dementia', 'Renal failure',
+                   'Intentional and unintentional injury, poisoning, and other adverse events',
+                   'All other conditions and causes (residual)']
+
+diseases_options = []
+for disease in unique_diseases:
+    diseases_options.append({"label": disease, "value": disease})
+
+health_cond_checkbox = dbc.FormGroup(
+    [
+        dbc.Row(
+            [
+                dbc.Col(dbc.Label("Underlying Health Conditions", style=style_calc_row_label, ), width=2),
+                dbc.Col(dbc.Checklist(
+                    options=diseases_options,
+                    value=[],
+                    id="health-cond-checkbox-input",
+                    style=style_calc_items,
+                    inline=False
+                ), width=10),
+            ]
+        )
+    ]
+)
+
+pg3_content = html.Div(
+    [
+        html.Hr(),
+        # dbc.Label(html.H6("Select the symptoms you or someone else is experiencing", className="tab2-title")),
+        dbc.Row(
+            [
+                dbc.Col(dbc.Form([age_group_radioitems, state_dropdown, gender_radioitems, health_cond_checkbox]),
+                        width=12),
+            ]
+        ),
+        dbc.Row(
+            [
+                dbc.Col(id="switches-calc-checklist-output", width=12),
+            ]
+        ),
+    ]
+)
+
+
+def calc_death_rate_demographics(age_group_value, state_value, gender_value):
+    if age_group_value == '0-24 years':
+        deaths_under1_query_result = age_sex_state_df.loc[
+            (age_sex_state_df['Age group'] == "Under 1 year") & (age_sex_state_df['State'] == state_value) & (
+                    age_sex_state_df['Sex'] == gender_value), ['COVID-19 Deaths']].values[0].flat[0]
+        deaths_1to4_query_result = age_sex_state_df.loc[
+            (age_sex_state_df['Age group'] == "1-4 years") & (age_sex_state_df['State'] == state_value) & (
+                    age_sex_state_df['Sex'] == gender_value), ['COVID-19 Deaths']].values[0].flat[0]
+        deaths_5to14_query_result = age_sex_state_df.loc[
+            (age_sex_state_df['Age group'] == "5-14 years") & (age_sex_state_df['State'] == state_value) & (
+                    age_sex_state_df['Sex'] == gender_value), ['COVID-19 Deaths']].values[0].flat[0]
+        deaths_15to24_query_result = age_sex_state_df.loc[
+            (age_sex_state_df['Age group'] == "15-24 years") & (age_sex_state_df['State'] == state_value) & (
+                    age_sex_state_df['Sex'] == gender_value), ['COVID-19 Deaths']].values[0].flat[0]
+        deaths_query_result = deaths_under1_query_result + deaths_1to4_query_result + deaths_5to14_query_result + deaths_15to24_query_result
+    else:
+        deaths_query_result = age_sex_state_df.loc[
+            (age_sex_state_df['Age group'] == age_group_value) & (age_sex_state_df['State'] == state_value) & (
+                    age_sex_state_df['Sex'] == gender_value), ['COVID-19 Deaths']].values[0].flat[0]
+    total_us_deaths_query_result = age_sex_state_df.loc[
+        (age_sex_state_df['Age group'] == "All Ages") & (age_sex_state_df['State'] == "United States") & (
+                age_sex_state_df['Sex'] == "All Sexes"), ['COVID-19 Deaths']].values[0].flat[0]
+    death_rate_demographics = (deaths_query_result/total_us_deaths_query_result)*100
+    return death_rate_demographics
+
+
+def calc_death_rate_diseases(age_group_value, state_value, health_conditions_values):
+    state_code = us_state_abbrev[state_value]
+    age_group = age_map_multiple_dfs[age_group_value]
+    death_rate_all_conditions = 0
+    for condition in health_conditions_values:
+        condition_total_deaths = underlying_conditions_df.loc[
+            (underlying_conditions_df['Age Group'] == "All Ages") & (underlying_conditions_df['State'] == "US") & (
+                    underlying_conditions_df['Condition Group'] == condition), ['Number of COVID-19 Deaths']].values.sum()
+        deaths_query_result = underlying_conditions_df.loc[
+            (underlying_conditions_df['Age Group'] == age_group) & (
+                        underlying_conditions_df['State'] == state_code) & (
+                    underlying_conditions_df['Condition Group'] == condition), ['Number of COVID-19 Deaths']].values.sum()
+        conditional_death_rate = (deaths_query_result / condition_total_deaths) * 100
+        death_rate_all_conditions += conditional_death_rate
+    return death_rate_all_conditions
+
+
+@app.callback(Output("switches-calc-checklist-output", "children"),
+              [Input("age-group-radioitems-input", "value"), Input("state-dropdown-input", "value"),
+               Input("gender-radioitems-input", "value"), Input("health-cond-checkbox-input", "value"), ], )
+def on_form_change(age_group_value, state_value, gender_value, health_conditions_values):
+    death_rate_demographics = calc_death_rate_demographics(age_group_value, state_value, gender_value)
+    if len(health_conditions_values) > 0:
+        death_rate_diseases = calc_death_rate_diseases(age_group_value, state_value, health_conditions_values)
+        final_surv_rate = 100 - (death_rate_demographics + death_rate_diseases)
+    else:
+        final_surv_rate = 100 - death_rate_demographics
+
+    estimation_message = "Your estimated survival rate is " + str(round(final_surv_rate, 2)) + "%"
+    template = html.Div(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(dbc.Card(html.H4(estimation_message),
+                                     color="success", inverse=True),
+                            "auto")
+                ]
+            ),
+        ], style={
+            'textAlign': 'center',
+            'width': 'auto',
+            'line-height': '1.2',
+            'padding-top': '1%',
+            'padding-left': '30%',
+            'padding-right': '30%',
+            'padding-bottom': '1%',
+            'font-size': '22px',
+        })
+    return template
+
+
 @app.callback(Output("page-content", "children"), [Input("url", "pathname")])
 def render_page_content(pathname):
     if pathname in ["/", "/cov-1"]:
@@ -442,7 +740,7 @@ def render_page_content(pathname):
     elif pathname == "/cov-2":
         return pg2_content
     elif pathname == "/cov-3":
-        return html.P("Oh cool, this is page 3!")
+        return pg3_content
     elif pathname == "/cov-4":
         return html.P("Oh cool, this is page 4!")
     elif pathname == "/cov-5":
