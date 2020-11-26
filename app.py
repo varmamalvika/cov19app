@@ -1,26 +1,23 @@
 import dash
-import dash_table
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_bootstrap_components as dbc
-import numpy as np
 from plotly.graph_objs import *
 from dash.dependencies import Input, Output
 import plotly.express as px
 import pandas as pd
 import requests
-from plotly.subplots import make_subplots
-from datetime import datetime
 
 external_stylesheets = [dbc.themes.CYBORG]
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app.title = "Coronavirus Tracker App "
 app.config['suppress_callback_exceptions'] = True
 server = app.server
 
 colors = {
-    'background': '#111111',
-    'text': '#7FDBFF'
+    'background': '#111111', #dark gray &'#000000' black
+    'text': '#00bfff'  #'#7FDBFF'
 }
 styling = {
     'textAlign': 'center',
@@ -29,13 +26,9 @@ styling = {
 
 age_sex_state_df = pd.read_csv('Covid_Age_Sex_State_Data.csv')
 age_sex_state_df['COVID-19 Deaths'] = age_sex_state_df['COVID-19 Deaths'].fillna(0)
-print(age_sex_state_df["State"].unique())
 
 underlying_conditions_df = pd.read_csv('Covid_Underlying_Conditions_Data.csv')
 underlying_conditions_df['Number of COVID-19 Deaths'] = underlying_conditions_df['Number of COVID-19 Deaths'].fillna(0)
-
-print(underlying_conditions_df["State"].unique())
-print(underlying_conditions_df["Condition Group"].unique())
 
 raw_us_df_data = requests.get("https://api.covidtracking.com/v1/us/daily.json").json()
 us_historical_df = pd.DataFrame(raw_us_df_data)
@@ -121,13 +114,13 @@ fig4.update_layout(
 
 nav = dbc.Nav(
     [
-        dbc.NavItem(dbc.NavLink(html.H5("COVID Tracker"), active=True, href="/cov-1", id="page-1-link")),
-        dbc.NavItem(dbc.NavLink(html.H5("COVID Pre-Scanner"), disabled=False, href="/cov-2", id="page-2-link")),
+        dbc.NavItem(dbc.NavLink(html.H5("COVID Tracker"), active=True, href="/covidtracker", id="page-1-link")),
+        dbc.NavItem(dbc.NavLink(html.H5("COVID Pre-Scanner"), disabled=False, href="/covidprescanner", id="page-2-link")),
         dbc.NavItem(
-            dbc.NavLink(html.H5("COVID Survival Rate Calculator"), disabled=False, href="/cov-3", id="page-3-link")),
+            dbc.NavLink(html.H5("COVID Survival Rate Calculator"), disabled=False, href="/survivalratecalc", id="page-3-link")),
         dbc.NavItem(
-            dbc.NavLink(html.H5("Frontline Responder Appreciation"), disabled=False, href="/cov-4", id="page-4-link")),
-        dbc.NavItem(dbc.NavLink(html.H5("Coronavirus Information"), disabled=False, href="/cov-5", id="page-5-link")),
+            dbc.NavLink(html.H5("Frontline Responder Appreciation"), disabled=False, href="/responderappreciation", id="page-4-link")),
+        dbc.NavItem(dbc.NavLink(html.H5("Coronavirus Information"), disabled=False, href="/covidinfo", id="page-5-link")),
     ],
     pills=True, horizontal='center', fill=True,
 )
@@ -147,21 +140,6 @@ app.layout = dbc.Container(
     children=[app_page], fluid=True
 )
 
-
-# app.layout = html.Div([
-#     dbc.Card(
-#         dbc.CardBody([
-#             html.Br(),
-#             dbc.Row([
-#                 dbc.Col([
-#                     app_page
-#                 ], width=12)
-#             ], align='center')
-#         ])
-#     )
-# ])
-
-
 # Referenced from https://dash-bootstrap-components.opensource.faculty.ai/examples/simple-sidebar/page-1
 # this callback uses the current pathname to set the active state of the
 # corresponding nav link to true, allowing users to tell see page they are on
@@ -170,10 +148,17 @@ app.layout = dbc.Container(
     [Input("url", "pathname")],
 )
 def toggle_active_links(pathname):
-    if pathname == "/":
+    if pathname == "/" or pathname == "/covidtracker":
         # Treat page 1 as the homepage / index
         return True, False, False, False, False
-    return [pathname == f"/cov-{i}" for i in range(1, 6)]
+    elif pathname == "/covidprescanner":
+        return False, True, False, False, False
+    elif pathname == "/survivalratecalc":
+        return False, False, True, False, False
+    elif pathname == "/responderappreciation":
+        return False, False, False, True, False
+    elif pathname == "/covidinfo":
+        return False, False, False, False, True
 
 
 us_map = html.Div(
@@ -309,6 +294,7 @@ pg1_content = html.Div(
                 dbc.Col(hosp_increase_visualization, width=12),
             ]
         ),
+        html.P("***The data source is updated each day between about 5:30 PM and 7 PM Eastern Time***")
     ]
 )
 
@@ -366,6 +352,8 @@ pg2_content = html.Div(
                 dbc.Col(id="switches-checklist-output", width=12),
             ]
         ),
+        html.P("***Please note this is just an estimation. In case of emergency, please call 911 or go to your "
+               "nearest emergency room.***")
     ]
 )
 
@@ -639,7 +627,7 @@ health_cond_checkbox = dbc.FormGroup(
 
 pg3_content = html.Div(
     [
-        html.Hr(),
+        html.Br(),
         # dbc.Label(html.H6("Select the symptoms you or someone else is experiencing", className="tab2-title")),
         dbc.Row(
             [
@@ -652,6 +640,8 @@ pg3_content = html.Div(
                 dbc.Col(id="switches-calc-checklist-output", width=12),
             ]
         ),
+        html.P("***Please note this is just an estimation, and not an absolute assessment of the effects covid-19 "
+               "might have on you.***")
     ]
 )
 
@@ -733,24 +723,280 @@ def on_form_change(age_group_value, state_value, gender_value, health_conditions
     return template
 
 
+# fundraising_quote = html.Div(
+#     [
+#         html.Blockquote(
+#             [
+#                 html.P(
+#                     "Alone we can do so little; together we can do so much",
+#                 ),
+#                 html.Footer(
+#                     html.Small("Helen Keller", className="text-muted")
+#                 ),
+#             ],
+#             className="blockquote",
+#         )
+#     ]
+# )
+
+fundraising_quote_badge = html.Span(
+    [
+        dbc.Badge("Alone we can do so little; together we can do so much - Helen Keller", pill=True, color="secondary",
+                  className="mr-1", style={'display': 'flex', 'flex-flow': 'column', 'font-size': 'small'})
+        # style={'font': '10px'},)
+    ], style={'display': 'flex', 'flex-flow': 'column'}
+)
+
+
+frontline_fund_card_content = [
+    dbc.CardImg(src="/static/images/flrf.PNG", top=True),
+    dbc.CardBody(
+        [
+            html.H5("Frontline Responders Fund", className="card-frontline-title"),
+            html.H6(
+                "This fundraiser focuses on getting critical supplies to frontline responders combating COVID-19.",
+                className="card-frontline-text",
+            ),
+            dbc.Button("Click me!", size="lg", color="warning", href='https://www.gofundme.com/f/frontlinerespondersfund/', target="_blank"),
+        ]
+    ),
+]
+
+who_fund_card_content = [
+    dbc.CardImg(src="/static/images/who.PNG", top=True),
+    dbc.CardBody(
+        [
+            html.H5("COVID-19 Solidarity Response Fund for WHO", className="card-frontline-title"),
+            html.H6(
+                "Donations support WHO’s work, including with partners, to track and understand the spread of the "
+                "virus; to ensure patients get the care they need and frontline workers get essential supplies and "
+                "information; and to accelerate research and development of a vaccine and treatments for all who need "
+                "them.",
+                className="card-frontline-text",
+            ),
+            dbc.Button("Click me!", size="lg", color="warning", href='https://covid19responsefund.org/en/',
+                       target="_blank"),
+        ]
+    ),
+]
+
+#COVID-19 Solidarity Response Fund for WHO
+
+#html.Div(
+pg4_content = dbc.Container(
+    [
+        #html.Br(),
+        dbc.Label(html.H4("Help Fight COVID-19", className="tab4-title", style={'color': '#DB7093'})),
+        dbc.Row(
+            [
+                dbc.Col(fundraising_quote_badge, width={"size": 6, "offset": 3})
+                #dbc.Col(dbc.Card(fundraising_quote, body=True, color="light"), width={"size": 6, "offset": 3}),
+            ]
+        ),
+        html.Br(),
+        dbc.Row(
+            [
+                dbc.Col(dbc.Card(frontline_fund_card_content, color="info", inverse=True), width=6),
+                dbc.Col(dbc.Card(who_fund_card_content, color="info", inverse=True), width=6),
+            ]
+        ),
+        html.Br()
+    ],
+    style={'display': 'flex', 'flex-flow': 'column'}
+)
+
+style_para = {'font-size': '20px', 'color': 'white'}
+
+about_covid_jumbotron = dbc.Jumbotron(
+    [
+        html.Div([
+            html.Img(src="/static/images/covid.ico",
+                     style={'display': 'inline', 'width': '6%', 'height': 'auto'}, ),
+            html.H5(" About COVID-19 ", className="display-4",
+                    style={'color': 'black', 'display': 'inline'}),
+            html.Img(src="/static/images/covid.ico", style={'display': 'inline', 'width': '6%', 'height': 'auto'}, ), ],
+            style={'textAlign': 'center'}),
+        html.H4("What is COVID-19?",
+                # className="lead",
+                style={'font-weight': 'bold', 'color': '#ffa500'}
+                ),
+        html.Hr(className="my-2"),
+        html.P(
+            "Coronavirus (COVID-19) is an illness caused by a virus that can spread from person to person. COVID-19 "
+            "symptoms can range from mild (or no symptoms) to severe illness. ", style=style_para
+        ),
+        # html.Br(),
+        html.H4("Why is it called COVID-19?",
+                # className="lead",
+                style={'font-weight': 'bold', 'color': '#ffa500'}
+                ),
+        html.Hr(className="my-2"),
+        html.P("On February 11, 2020 the World Health Organization announced an official name for the disease that is "
+               "causing the 2019 novel coronavirus outbreak, first identified in Wuhan China. The new name of this "
+               "disease is coronavirus disease 2019, abbreviated as COVID-19. In COVID-19, ‘CO’ stands for ‘corona,"
+               "’ ‘VI’ for ‘virus,’ and ‘D’ for disease. Formerly, this disease was referred to as “2019 novel "
+               "coronavirus” or “2019-nCoV”. ", style=style_para
+               ),
+        html.P("There are many types of human coronaviruses including some that commonly cause mild upper-respiratory "
+               "tract illnesses. COVID-19 is a new disease, caused by a novel (or new) coronavirus that has not "
+               "previously been seen in humans. ", style=style_para
+               ),
+    ], style={'background-color': 'SlateBlue', 'text-align': 'left', 'font-family': 'sans-serif', 'padding-top': '2px',
+              'padding-bottom': '2px'}
+)
+
+covid_spread_jumbotron = dbc.Jumbotron(
+    [
+        html.Div([
+            html.Img(src="/static/images/covidspread.ico",
+                     style={'display': 'inline', 'width': '6%', 'height': 'auto'}, ),
+            html.H5(" COVID-19 Spread ", className="display-4", style={'color': 'black', 'display': 'inline'}),
+            html.Img(src="/static/images/covidspread.ico",
+                     style={'display': 'inline', 'width': '6%', 'height': 'auto'}), ], style={'textAlign': 'center'}),
+        html.H4("How does COVID-19 spread?",
+                # className="lead",
+                style={'font-weight': 'bold', 'color': '#ffa500'}
+                ),
+        html.Hr(className="my-2"),
+        html.P(
+            "You can become infected by coming into close contact (about 6 feet or two arm lengths) with a person who "
+            "has COVID-19. COVID-19 is primarily spread from person to person.",
+            style=style_para
+        ),
+        html.P("You can become infected from respiratory droplets when an infected person coughs, sneezes, or talks.",
+               style=style_para),
+        html.P(
+            "You may also be able to get it by touching a surface or object that has the virus on it, and then by "
+            "touching your mouth, nose, or eyes.",
+            style=style_para),
+    ], style={'background-color': '#ac3973', 'text-align': 'left', 'font-family': 'sans-serif', 'padding-top': '2px',
+              'padding-bottom': '2px'} #'#800080'
+)
+
+covid_prevention_jumbotron = dbc.Jumbotron(
+    [
+        html.Div([
+            html.Img(src="/static/images/covidprevention.ico",
+                     style={'display': 'inline', 'width': '6%', 'height': 'auto'}, ),
+            html.H5(" COVID-19 Prevention ", className="display-4", style={'color': 'black', 'display': 'inline'}),
+            html.Img(src="/static/images/covidprevention.ico",
+                     style={'display': 'inline', 'width': '6%', 'height': 'auto'}), ], style={'textAlign': 'center'}),
+        html.H4("How to protect myself & others?",
+                # className="lead",
+                style={'font-weight': 'bold', 'color': '#ffa500'}
+                ),
+        html.Hr(className="my-2"),
+        html.P(
+            "Stay home as much as possible and avoid close contact with others.",
+            style=style_para
+        ),
+        html.P("Wear a mask that covers your nose and mouth in public settings.",
+               style=style_para),
+        html.P("Clean and disinfect frequently touched surfaces.",
+               style=style_para),
+        html.P("Wash your hands often with soap and water for at least 20 seconds, or use an alcohol-based hand "
+               "sanitizer that contains at least 60% alcohol.", style=style_para),
+        html.P("Monitor your health daily by staying alert for symptoms and by taking your temperature if symptoms "
+               "develop", style=style_para),
+        html.H4("What should I do if I had a close contact with someone who has COVID-19?",
+                # className="lead",
+                style={'font-weight': 'bold', 'color': '#ffa500'}
+                ),
+        html.Hr(className="my-2"),
+        html.P("Stay home for 14 days after your last contact with a person who has COVID-19.",
+               style=style_para),
+        html.P("Be alert for symptoms. Watch for fever, cough, shortness of breath, or other symptoms of COVID-19.",
+               style=style_para),
+        html.P("If possible, stay away from others, especially people who are at higher risk for getting very sick "
+               "from COVID-19.", style=style_para),
+
+
+    ], style={'background-color': 'SlateBlue', 'text-align': 'left', 'font-family': 'sans-serif', 'padding-top': '2px',
+              'padding-bottom': '2px'}
+)
+
+covid_emergency_jumbotron = dbc.Jumbotron(
+    [
+        html.Div([
+            html.Img(src="/static/images/covidemergency.ico",
+                     style={'display': 'inline', 'width': '6%', 'height': 'auto'}, ),
+            html.H5(" COVID-19 Emergency Warning Signs ", className="display-4",
+                    style={'color': 'black', 'display': 'inline'}),
+            html.Img(src="/static/images/covidemergency.ico",
+                     style={'display': 'inline', 'width': '6%', 'height': 'auto'}), ], style={'textAlign': 'center'}),
+        html.H4("When should I seek emergency care if I have COVID-19?",
+                style={'font-weight': 'bold', 'color': '#ffa500'}
+                ),
+        html.Hr(className="my-2"),
+        html.P(
+            "Look for emergency warning signs* for COVID-19. If someone is showing any of these signs, seek emergency "
+            "medical care immediately",
+            style=style_para
+        ),
+        html.Ul([
+            html.Li("Trouble breathing", style=style_para),
+            html.Li("Persistent pain or pressure in the chest", style=style_para),
+            html.Li("New confusion", style=style_para),
+            html.Li("Inability to wake or stay awake", style=style_para),
+            html.Li("Bluish lips or face", style=style_para), ]),
+        html.P("*This list is not all possible symptoms. Please call your medical provider for any other symptoms "
+               "that are severe or concerning to you. Call 911 or call ahead to your local emergency facility: "
+               "Notify the operator that you are seeking care for someone who has or may have COVID-19.",
+               style=style_para),
+    ], style={'background-color': '#ac3973', 'text-align': 'left', 'font-family': 'sans-serif', 'padding-top': '2px',
+              'padding-bottom': '2px'}
+)
+
+covid_advice_jumbotron = dbc.Jumbotron(
+    [
+        html.Div([
+            html.Img(src="/static/images/covidadvice.ico",
+                     style={'display': 'inline', 'width': '6%', 'height': 'auto'}, ),
+            html.H5(" COVID-19 Advice for the public ", className="display-4",
+                    style={'color': 'black', 'display': 'inline'}),
+            html.Img(src="/static/images/covidadvice.ico",
+                     style={'display': 'inline', 'width': '6%', 'height': 'auto'}), ], style={'textAlign': 'center'}),
+        html.P("Stay aware of the latest COVID-19 information, by regularly checking updates from WHO (World Health "
+               "Organization) and your national and local public health authorities.",
+               style=style_para),
+        html.Div([
+            dbc.Button("Click me to check out WHO's advice for the public", size="lg", color="success",
+                       href='https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public',
+                       target="_blank"), ], style={'textAlign': 'center'}),
+        html.Br(),
+    ], style={'background-color': 'SlateBlue', 'text-align': 'left', 'font-family': 'sans-serif', 'padding-top': '2px',
+              'padding-bottom': '2px'}
+)
+
+pg5_content = html.Div(
+    [
+        html.Hr(),
+        # dbc.Label(html.H6("Select the symptoms you or someone else is experiencing", className="tab2-title")),
+        about_covid_jumbotron, covid_spread_jumbotron, covid_prevention_jumbotron, covid_emergency_jumbotron,
+        covid_advice_jumbotron,
+        html.P("***The source for this information is Centers for Disease Control and Prevention (CDC)***")
+    ]
+)
+
+
 @app.callback(Output("page-content", "children"), [Input("url", "pathname")])
 def render_page_content(pathname):
-    if pathname in ["/", "/cov-1"]:
+    if pathname in ["/", "/covidtracker"]:
         return pg1_content
-    elif pathname == "/cov-2":
+    elif pathname == "/covidprescanner":
         return pg2_content
-    elif pathname == "/cov-3":
+    elif pathname == "/survivalratecalc":
         return pg3_content
-    elif pathname == "/cov-4":
-        return html.P("Oh cool, this is page 4!")
-    elif pathname == "/cov-5":
-        return html.P("Oh cool, this is page 5!")
+    elif pathname == "/responderappreciation":
+        return pg4_content
+    elif pathname == "/covidinfo":
+        return pg5_content
     # If the user tries to reach a different page, return a 404 message
     return dbc.Jumbotron(
         [
             html.H1("404: Not found", className="text-danger"),
             html.Hr(),
-            html.P(f"The pathname {pathname} was not recognised..."),
+            html.P(f"The pathname {pathname} was not recognized..."),
         ]
     )
 
